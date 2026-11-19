@@ -32,6 +32,9 @@ namespace Sokol.App
         public static readonly Color LightHighlight = Color.FromArgb(245, 246, 130);
         public static readonly Color DarkHighlight = Color.FromArgb(185, 202, 67);
 
+        /// <summary>Fonts for the symbols inside move badges (switched to DejaVu Sans for the Android export).</summary>
+        public static string BadgeSymbolFont = "Segoe UI Symbol", BadgeTextFont = "Segoe UI Black";
+
         public static Font UiFont, UiBold, UiSmall, UiSmallBold, UiLarge, UiTitle, MoveFont, MoveFontBold, BadgeFont, CoordFont;
 
         public static void Init(float scale)
@@ -149,7 +152,7 @@ namespace Sokol.App
             bool symbol = c == MoveClass.Excellent || c == MoveClass.Best || c == MoveClass.Good || c == MoveClass.Miss || c == MoveClass.Forced;
             float size = r.Height * (text.Length >= 2 ? 0.46f : symbol ? 0.58f : 0.56f);
             bool emoji = symbol;
-            using (var f = new Font(emoji ? "Segoe UI Symbol" : "Segoe UI Black", Math.Max(4f, size), FontStyle.Bold, GraphicsUnit.Pixel))
+            using (var f = new Font(emoji ? BadgeSymbolFont : BadgeTextFont, Math.Max(4f, size), FontStyle.Bold, GraphicsUnit.Pixel))
             using (var path = new GraphicsPath())
             {
                 var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };

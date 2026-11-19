@@ -1,6 +1,6 @@
 # Builds SokolChess.exe (WinForms, .NET Framework 4.8 - already built into Windows 10/11).
-# Usage:  powershell -ExecutionPolicy Bypass -File build.ps1 [-Tests]
-param([switch]$Tests)
+# Usage:  powershell -ExecutionPolicy Bypass -File build.ps1 [-Tests] [-Out path	o\SokolChess.exe]
+param([switch]$Tests, [string]$Out = '')
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
@@ -31,8 +31,9 @@ if ($Tests) {
     exit 0
 }
 
-$app = Get-ChildItem (Join-Path $root 'src\App') -Filter *.cs | ForEach-Object { $_.FullName }
-$out = Join-Path $root 'SokolChess.exe'
+$app = Get-ChildItem (Join-Path $root 'src\App'), (Join-Path $root 'src\Shared') -Filter *.cs | ForEach-Object { $_.FullName }
+$out = if ($Out) { $Out } else { Join-Path $root 'SokolChess.exe' }
+New-Item -ItemType Directory -Force (Split-Path $out) | Out-Null
 $extra = @('-target:winexe', "-out:$out", "-win32manifest:$(Join-Path $root 'src\app.manifest')")
 $icon = Join-Path $root 'src\App\app.ico'
 if (Test-Path $icon) { $extra += "-win32icon:$icon" }

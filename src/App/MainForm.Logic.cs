@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Windows.Forms;
 using Sokol.Engine;
+using Sokol.Shared;
 using Mv = Sokol.Engine.Move;
 
 namespace Sokol.App

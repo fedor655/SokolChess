@@ -14,12 +14,21 @@ namespace Sokol.App
     static class PieceRenderer
     {
         static readonly Dictionary<long, Bitmap> cache = new Dictionary<long, Bitmap>();
-        static readonly FontFamily family = PickFamily();
+        static FontFamily family = PickFamily(null);
 
-        static FontFamily PickFamily()
+        /// <summary>Switches the glyph font (used to export the Android piece set from DejaVu Sans).</summary>
+        public static void UseFont(string name)
         {
-            foreach (var name in new[] { "Segoe UI Symbol", "DejaVu Sans", "Arial Unicode MS" })
+            family = PickFamily(name);
+            foreach (var b in cache.Values) b.Dispose();
+            cache.Clear();
+        }
+
+        static FontFamily PickFamily(string preferred)
+        {
+            foreach (var name in new[] { preferred, "Segoe UI Symbol", "DejaVu Sans", "Arial Unicode MS" })
             {
+                if (string.IsNullOrEmpty(name)) continue;
                 try { return new FontFamily(name); } catch { }
             }
             return FontFamily.GenericSansSerif;

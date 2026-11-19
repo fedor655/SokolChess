@@ -2,15 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 using Sokol.Engine;
 
-namespace Sokol.App
+namespace Sokol.Shared
 {
-    enum GameResult { None, WhiteWins, BlackWins, Draw }
+    public enum GameResult { None, WhiteWins, BlackWins, Draw }
 
     /// <summary>The game record: moves, positions (by hash), engine analyses and move reviews.</summary>
-    sealed class Game
+    public sealed class Game
     {
         public readonly string StartFen = Board.StartFen;
         public readonly Board Current = new Board();
@@ -124,7 +123,7 @@ namespace Sokol.App
     /// Background engine analysis of every position of the game (full strength, MultiPV 2).
     /// Results are delivered on the UI thread.
     /// </summary>
-    sealed class AnalysisService : IDisposable
+    public sealed class AnalysisService : IDisposable
     {
         sealed class Task
         {
@@ -143,7 +142,8 @@ namespace Sokol.App
             public volatile bool Exit;
         }
 
-        readonly Control ui;
+        /// <summary>Posts an action to the UI thread.</summary>
+        readonly Action<Action> post;
         readonly object sync = new object();
         readonly List<Worker> workers = new List<Worker>();
         /// <summary>(ply, hash) pairs already analyzed and posted to the UI.</summary>
@@ -154,10 +154,12 @@ namespace Sokol.App
 
         public int TimeMs = 1000;
         public int MultiPv = 2;
+        /// <summary>Transposition table size per worker (smaller on phones).</summary>
+        public int HashMb = 32;
         /// <summary>(ply, hash, analysis, isFinal) - raised on the UI thread.</summary>
         public event Action<int, ulong, PositionAnalysis, bool> Result;
 
-        public AnalysisService(Control ui) { this.ui = ui; }
+        public AnalysisService(Action<Action> post) { this.post = post; }
 
         public int WorkerCount
         {
@@ -168,7 +170,7 @@ namespace Sokol.App
                 {
                     while (workers.Count < value)
                     {
-                        var w = new Worker { Searcher = new Searcher(32) };
+                        var w = new Worker { Searcher = new Searcher(HashMb) };
                         w.Thread = new Thread(() => Loop(w)) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "analysis" };
                         workers.Add(w);
                         w.Thread.Start();
@@ -284,12 +286,8 @@ namespace Sokol.App
 
         void Post(Task task, PositionAnalysis a, bool final)
         {
-            try
-            {
-                if (ui.IsHandleCreated && !ui.IsDisposed)
-                    ui.BeginInvoke((Action)(() => Result?.Invoke(task.Ply, task.Hash, a, final)));
-            }
-            catch (InvalidOperationException) { }
+            try { post(() => Result?.Invoke(task.Ply, task.Hash, a, final)); }
+            catch (Exception) { }
         }
 
         public void Dispose()

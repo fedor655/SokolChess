@@ -31,6 +31,11 @@ namespace Sokol.App
                 AppIcon.SaveIco(args[1]);
                 return 0;
             }
+            if (args.Length >= 2 && args[0] == "--android-assets")
+            {
+                ExportAndroidAssets(args[1]);
+                return 0;
+            }
 
             var form = new MainForm();
             if (args.Length >= 2 && args[0] == "--selftest") form.ConfigureSelfTest(Path.GetFullPath(args[1]));
@@ -57,6 +62,49 @@ namespace Sokol.App
             }
             Application.Run(form);
             return 0;
+        }
+
+        /// <summary>
+        /// Renders the Android art (pieces, move badges, launcher icons) from DejaVu Sans,
+        /// a freely redistributable font, so the phone app looks like the desktop one.
+        /// </summary>
+        static void ExportAndroidAssets(string resDir)
+        {
+            PieceRenderer.UseFont("DejaVu Sans");
+            Theme.BadgeSymbolFont = "DejaVu Sans";
+            Theme.BadgeTextFont = "DejaVu Sans";
+            string drawable = Path.Combine(resDir, "drawable-nodpi");
+            Directory.CreateDirectory(drawable);
+            string[] names = { "p", "n", "b", "r", "q", "k" };
+            for (int c = 0; c < 2; c++)
+                for (int t = 0; t < 6; t++)
+                    using (var src = PieceRenderer.Get(Piece.Make(c, t), 256))
+                    using (var bmp = new Bitmap(src))
+                        bmp.Save(Path.Combine(drawable, $"piece_{(c == 0 ? "w" : "b")}{names[t]}.png"), System.Drawing.Imaging.ImageFormat.Png);
+
+            foreach (MoveClass mc in Enum.GetValues(typeof(MoveClass)))
+            {
+                if (mc == MoveClass.None) continue;
+                using (var bmp = new Bitmap(96, 96, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+                {
+                    using (var g = Graphics.FromImage(bmp))
+                    {
+                        g.SmoothingMode = SmoothingMode.AntiAlias;
+                        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                        Theme.DrawBadge(g, mc, 48, 46, 84);
+                    }
+                    bmp.Save(Path.Combine(drawable, $"badge_{mc.ToString().ToLowerInvariant()}.png"), System.Drawing.Imaging.ImageFormat.Png);
+                }
+            }
+
+            var icons = new[] { ("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192) };
+            foreach (var (dpi, size) in icons)
+            {
+                string dir = Path.Combine(resDir, "mipmap-" + dpi);
+                Directory.CreateDirectory(dir);
+                using (var bmp = AppIcon.Render(size))
+                    bmp.Save(Path.Combine(dir, "ic_launcher.png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
         }
 
         static void ShowError(Exception ex)

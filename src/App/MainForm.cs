@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using Sokol.Engine;
+using Sokol.Shared;
 using Mv = Sokol.Engine.Move;
 
 namespace Sokol.App
@@ -124,7 +125,7 @@ namespace Sokol.App
             tips.SetToolTip(navNext, "Следующий ход (→)");
             tips.SetToolTip(navLast, "К последнему ходу (End)");
 
-            analysis = new AnalysisService(this);
+            analysis = new AnalysisService(a => { if (IsHandleCreated && !IsDisposed) BeginInvoke(a); });
             analysis.Result += OnAnalysisResult;
             WireEvents();
             LoadSettings();
